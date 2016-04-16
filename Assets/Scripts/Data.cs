@@ -12,7 +12,7 @@ public class Data
 
     public float getHeight (int index)
     {
-        int actualIndex = Mathf.FloorToInt(index * 10 / 640);
+        int actualIndex = Mathf.FloorToInt(index * 16 / 640);
         float value;
         if (float.TryParse(heights[actualIndex], out value))
         {

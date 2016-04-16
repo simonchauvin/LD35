@@ -6,17 +6,15 @@ public class WorldManager : MonoBehaviour
 {
     private static WorldManager _instance;
 
-    public GameObject layer1Prefab;
-    public GameObject layer2Prefab;
-    public GameObject layer3Prefab;
-    public GameObject layer4Prefab;
+    public string fileName;
+    public GameObject[] layerPrefabs;
+    public Material[] layerMaterials;
     public float panelWidth;
 
-    private World world;
-    private int currentWorldIndex;
-    private GameObject[] layers;
     private Transform gameplayFolder;
     private Camera mainCam;
+    private World world;
+    private GameObject[] layers;
     private float panelHeight;
 
 
@@ -34,30 +32,48 @@ public class WorldManager : MonoBehaviour
 
     void Awake ()
     {
-        world = new World();
         gameplayFolder = GameObject.Find("Gameplay").transform;
         mainCam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
+        
+        world = new World(fileName);
         layers = new GameObject[4];
         Vector3 bottomLeft = mainCam.ScreenToWorldPoint(Vector3.zero);
-        Vector3 topRight = mainCam.ScreenToWorldPoint(new Vector3(Screen.width, Screen.height));
+        Vector3 topRight = mainCam.ScreenToWorldPoint(new Vector3(Screen.width, 300));
         float distHor = (topRight.x - bottomLeft.x);
         panelHeight = (topRight.y - bottomLeft.y) / 4;
         mainCam.transform.position = new Vector3(distHor / 2, 0, -20f);
 
         int numberOfPanels = Mathf.CeilToInt(distHor / panelWidth);
 
-        layers[3] = Instantiate(layer4Prefab, new Vector3(0f, 0f, 0.3f), Quaternion.identity) as GameObject;
-        layers[3].transform.parent = gameplayFolder;
-        resetLayerMesh(numberOfPanels, 3);
-        layers[2] = Instantiate(layer3Prefab, new Vector3(0f, 0f, 0.2f), Quaternion.identity) as GameObject;
-        layers[2].transform.parent = gameplayFolder;
-        resetLayerMesh(numberOfPanels, 2);
-        layers[1] = Instantiate(layer2Prefab, new Vector3(0f, 0f, 0.1f), Quaternion.identity) as GameObject;
-        layers[1].transform.parent = gameplayFolder;
-        resetLayerMesh(numberOfPanels, 1);
-        layers[0] = Instantiate(layer1Prefab, new Vector3(0f, 0f, 0f), Quaternion.identity) as GameObject;
-        layers[0].transform.parent = gameplayFolder;
-        resetLayerMesh(numberOfPanels, 0);
+        loadLayer(3, numberOfPanels);
+        loadLayer(2, numberOfPanels);
+        loadLayer(1, numberOfPanels);
+        loadLayer(0, numberOfPanels);
+    }
+
+    private void loadLayer (int layerIndex, int numberOfPanels)
+    {
+        Vector3 pos = Vector3.zero;
+        if (layerIndex == 0)
+        {
+            pos = new Vector3(0f, 0f, 0f);
+        }
+        else if (layerIndex == 1)
+        {
+            pos = new Vector3(0f, 0f, 0.1f);
+        }
+        else if (layerIndex == 2)
+        {
+            pos = new Vector3(0f, 0f, 0.2f);
+        }
+        else if (layerIndex == 3)
+        {
+            pos = new Vector3(0f, 0f, 0.3f);
+        }
+        layers[layerIndex] = Instantiate(layerPrefabs[layerIndex], pos, Quaternion.identity) as GameObject;
+        layers[layerIndex].transform.parent = gameplayFolder;
+        layers[layerIndex].GetComponent<MeshRenderer>().material = layerMaterials[world.getIndex() + layerIndex];
+        resetLayerMesh(numberOfPanels, layerIndex);
     }
 
     private void resetLayerMesh (int numberOfPanels, int layerIndex)
@@ -67,7 +83,7 @@ public class WorldManager : MonoBehaviour
         Vector3[] vertices = new Vector3[numberOfPanels * 4];
         int[] triangles = new int[numberOfPanels * 2 * 3];
         float xPos = 0;
-        float yPos = (0 - (panelHeight * (4 / 2))) + (panelHeight * layerIndex);
+        float yPos = (-1f - (panelHeight * (4 / 2))) + (panelHeight * layerIndex);
         for (int i = 0; i < vertices.Length; i += 4)
         {
             vertices[i] = new Vector3(xPos, yPos, 0);
@@ -97,7 +113,7 @@ public class WorldManager : MonoBehaviour
 	
 	void Update ()
     {
-        if (File.Exists(world.getFileName()))
+        if (File.Exists(world.getFilePath()))
         {
             updateWorld(world.retrieveData());
         }
@@ -110,11 +126,11 @@ public class WorldManager : MonoBehaviour
         {
             Mesh mesh = layer.GetComponent<MeshFilter>().mesh;
             Vector3[] vertices = mesh.vertices;
-            float yPos = (0 - (panelHeight * (4 / 2))) + (panelHeight * index) + panelHeight;
+            float yPos = (-1f - (panelHeight * (4 / 2))) + (panelHeight * index) + panelHeight;
             for (int i = 0; i < vertices.Length; i += 4)
             {
-                vertices[i + 2] = new Vector3(mesh.vertices[i].x + panelWidth, yPos + formatHeight(data[index].getHeight(i)), mesh.vertices[i].z);
-                vertices[i + 3] = new Vector3(mesh.vertices[i].x, yPos + formatHeight(data[index].getHeight(i)), mesh.vertices[i].z);
+                vertices[i + 2] = new Vector3(mesh.vertices[i + 2].x, yPos + formatHeight(data[index].getHeight(i + 2)), mesh.vertices[i + 2].z);
+                vertices[i + 3] = new Vector3(mesh.vertices[i + 3].x, yPos + formatHeight(data[index].getHeight(i + 3)), mesh.vertices[i + 3].z);
             }
             mesh.vertices = vertices;
             mesh.RecalculateNormals();
@@ -124,6 +140,7 @@ public class WorldManager : MonoBehaviour
 
     private float formatHeight(float height)
     {
+        height = ((height * 5) / 9) - 2.5f;
         if (height > panelHeight * 0.8f)
         {
             height = panelHeight * 0.8f;

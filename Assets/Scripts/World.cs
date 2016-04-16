@@ -5,19 +5,19 @@ using System.IO;
 public class World
 {
     private int index;
-    private string fileName;
+    private string filePath;
     private StreamWriter outputStream;
 
 
-    public World ()
+    public World (string fileName)
     {
         index = 0;
         do
         {
-            fileName = Application.dataPath + "/../world_" + index + ".txt";
+            filePath = Application.dataPath + "/../" + fileName + "_" + index + ".txt";
             index++;
         }
-        while (File.Exists(fileName));
+        while (File.Exists(filePath));
         index--;
 
         // Create world file
@@ -26,10 +26,10 @@ public class World
 
     private void writeLines (int number)
     {
-        outputStream = new StreamWriter(fileName, true);
+        outputStream = new StreamWriter(filePath, true);
         for (int i = 0; i < number; i++)
         {
-            outputStream.WriteLine("0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0");
+            outputStream.WriteLine("5|5|5|5|5|5|5|5|5|5|5|5|5|5|5|5");
         }
         outputStream.Flush();
         outputStream.Close();
@@ -37,7 +37,7 @@ public class World
 
     public Data[] retrieveData ()
     {
-        string[] lines = File.ReadAllLines(fileName);
+        string[] lines = File.ReadAllLines(filePath);
         /*if (lines.Length < 4)
         {
             writeLines(1);
@@ -46,18 +46,23 @@ public class World
         Data[] data = new Data[4];
         for (int i = lines.Length - 1; i >= 0; i--)
         {
-            data[lines.Length - 1 - i] = new Data(lines[i].Split(','));
+            data[lines.Length - 1 - i] = new Data(lines[i].Split('|'));
         }
         return data;
     }
 
     public void delete ()
     {
-        File.Delete(fileName);
+        File.Delete(filePath);
     }
 
-    public string getFileName ()
+    public string getFilePath ()
     {
-        return fileName;
+        return filePath;
+    }
+
+    public int getIndex ()
+    {
+        return index;
     }
 }
