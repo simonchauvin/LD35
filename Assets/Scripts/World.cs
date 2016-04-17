@@ -26,13 +26,8 @@ public class World
         }
 
         // Create world file
-        writeLines(4);
-    }
-
-    private void writeLines (int number)
-    {
         outputStream = new StreamWriter(filePath, true);
-        for (int i = 0; i < number; i++)
+        for (int i = 0; i < 4; i++)
         {
             outputStream.WriteLine("5|5|5|5|5|5|5|5|5|5|5|5|5|5|5|5");
         }
@@ -43,11 +38,6 @@ public class World
     public Data[] retrieveData ()
     {
         string[] lines = File.ReadAllLines(filePath);
-        /*if (lines.Length < 4)
-        {
-            writeLines(1);
-            lines = File.ReadAllLines(fileName);
-        }*/
         Data[] data = new Data[4];
         for (int i = lines.Length - 1; i >= 0; i--)
         {

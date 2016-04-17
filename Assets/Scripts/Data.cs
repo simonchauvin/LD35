@@ -14,13 +14,13 @@ public class Data
     {
         int actualIndex = Mathf.FloorToInt(index * 16 / 64);
         float value;
-        if (float.TryParse(heights[actualIndex], out value))
+        if (actualIndex < heights.Length)
         {
-            return value;
+            if (float.TryParse(heights[actualIndex], out value))
+            {
+                return value;
+            }
         }
-        else
-        {
-            return 0;
-        }
+        return 0;
     }
 }
