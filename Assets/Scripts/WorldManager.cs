@@ -14,6 +14,12 @@ public class WorldManager : MonoBehaviour
 
     private Transform gameplayFolder;
     private Camera mainCam;
+    private Transform dLight;
+    private Vector3 dLightRotStart;
+    private Vector3 dLightRotEnd;
+    private float lightTimer;
+    private float maxLightTimer;
+    private bool lightRotPhase;
     private World world;
     private GameObject[] layers;
     private float planeWidth;
@@ -38,7 +44,13 @@ public class WorldManager : MonoBehaviour
     {
         gameplayFolder = GameObject.Find("Gameplay").transform;
         mainCam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
-        
+        dLight = GameObject.FindObjectOfType<Light>().transform;
+        dLightRotStart = dLight.rotation.eulerAngles;
+        dLightRotEnd = new Vector3(dLight.rotation.eulerAngles.x - 30f, dLight.rotation.eulerAngles.y, dLight.rotation.eulerAngles.z);
+        lightTimer = 0f;
+        maxLightTimer = 5f + Random.value;
+        lightRotPhase = false;
+
         world = new World();
         mainCam.backgroundColor = skiesColor[world.getIndex()];
         Vector3 bottomLeft = mainCam.ScreenToWorldPoint(Vector3.zero);
@@ -123,12 +135,15 @@ public class WorldManager : MonoBehaviour
         {
             Data[] data = world.retrieveData(world.getFilePath());
             updateWorld(data);
-            
-            if (!isThisTheLastWorld() && canUnlockNextSeason(data))
+
+            float[] totalPerLayer = computeTotalPerLayer(data);
+            int biggest = findBiggestLayer(totalPerLayer);
+            if (!isThisTheLastWorld() && canUnlockNextSeason(totalPerLayer, biggest))
             {
                 if (File.Exists(exeFilePath) && !isThisWorldRunningAlready(world.getNextWorldIndex()) && !nextSeasonUnlocked)
                 {
                     nextSeasonUnlocked = true;
+                    writeInterSeasonFile(totalPerLayer, biggest);
                     System.Diagnostics.Process.Start(exeFilePath);
                 }
             }
@@ -145,11 +160,35 @@ public class WorldManager : MonoBehaviour
                 // TODO end the game
                 // fade all to black ?
             }
+
+            if (lightRotPhase)
+            {
+                dLight.rotation = Quaternion.Euler(Vector3.Lerp(dLightRotStart, dLightRotEnd, lightTimer / maxLightTimer));
+            }
+            else
+            {
+                dLight.rotation = Quaternion.Euler(Vector3.Lerp(dLightRotEnd, dLightRotStart, lightTimer / maxLightTimer));
+            }
+            lightTimer += Time.deltaTime;
+            if (lightTimer >= maxLightTimer)
+            {
+                lightTimer = 0;
+                lightRotPhase = !lightRotPhase;
+            }
         }
         else
         {
             GameManager.instance.exit();
         }
+    }
+
+    private void writeInterSeasonFile (float[] totalPerLayer, int biggest)
+    {
+        StreamWriter outputStream = new StreamWriter(Application.dataPath + "/inter_season.txt", false);
+        
+        outputStream.WriteLine(biggest + ":" + totalPerLayer[biggest]);
+        outputStream.Flush();
+        outputStream.Close();
     }
 
     private bool isThisWorldRunningAlready (int index)
@@ -176,25 +215,46 @@ public class WorldManager : MonoBehaviour
         }
     }
 
-    public bool canUnlockNextSeason(Data[] data)
+    public float[] computeTotalPerLayer (Data[] data)
     {
-        // TODO design
-        float total = 0;
-        foreach (Data layerData in data)
+        float[] totalPerLayer = new float[4];
+        for (int i = 0; i < data.Length; i++)
         {
-            for (int i = 0; i < layerData.length; i++)
+            for (int j = 0; j < data[i].length; j++)
             {
-                total += layerData.getHeight(i);
+                totalPerLayer[i] += data[i].getHeight(j);
             }
         }
-        if (total > 325)
+        return totalPerLayer;
+    }
+
+    public int findBiggestLayer (float[] totalPerLayer)
+    {
+        int biggest = 0;
+        for (int i = 1; i < totalPerLayer.Length; i++)
         {
-            return true;
+            if (totalPerLayer[biggest] < totalPerLayer[i])
+            {
+                biggest = i;
+            }
         }
-        else
+        return biggest;
+    }
+
+    public bool canUnlockNextSeason(float[] totalPerLayer, int biggest)
+    {
+        for (int i = 1; i < totalPerLayer.Length; i++)
         {
-            return false;
+            totalPerLayer[i] += 16;
+            if (i != biggest)
+            {
+                if (totalPerLayer[biggest] < totalPerLayer[i] * 2f)
+                {
+                    return false;
+                }
+            }
         }
+        return true;
     }
 
     private void updateWorld (Data[] data)
@@ -204,7 +264,7 @@ public class WorldManager : MonoBehaviour
         {
             Mesh mesh = layer.GetComponent<MeshFilter>().mesh;
             Vector3[] vertices = mesh.vertices;
-            float yPos = (-1.2f - (planeHeight * 2)) + (planeHeight * index) + planeHeight;
+            float yPos = (-1f - (planeHeight * 2)) + (planeHeight * index) + planeHeight;
             for (int i = 0; i < vertices.Length; i += 4)
             {
                 vertices[i + 2] = new Vector3(mesh.vertices[i + 2].x, yPos + formatHeight(data[index].getHeight(Mathf.FloorToInt(((i + 2) * 16) / 64))), mesh.vertices[i + 2].z);
@@ -218,17 +278,7 @@ public class WorldManager : MonoBehaviour
 
     private float formatHeight(float height)
     {
-        float ratio = 1.0f;
-        height = ((height * 4) / 9) - planeHeight;
-        if (height > planeHeight * ratio)
-        {
-            height = planeHeight * ratio;
-        }
-        else if (height < -planeHeight * ratio)
-        {
-            height = -planeHeight * ratio;
-        }
-        return height;
+        return height / 2;
     }
 
     public void deleteWorld ()

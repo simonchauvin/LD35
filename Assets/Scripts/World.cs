@@ -24,11 +24,40 @@ public class World
             GameManager.instance.exit();
         }
 
+        // Read inter season file
+        string p = Application.dataPath + "/inter_season.txt";
+        int layer = -1;
+        int total = -1;
+        if (File.Exists(p))
+        {
+            StreamReader reader = new StreamReader(p);
+            string line = reader.ReadLine();
+            layer = int.Parse(line.Split(':')[0]);
+            total = int.Parse(line.Split(':')[1]);
+        }
+
         // Create world file
         StreamWriter outputStream = new StreamWriter(path, true);
         for (int i = 0; i < 4; i++)
         {
-            outputStream.WriteLine("5|5|5|5|5|5|5|5|5|5|5|5|5|5|5|5");
+            int value = 0;
+            string line = "";
+            if (i == layer)
+            {
+                value = total / 32;
+            }
+            for (int j = 0; j < 16; j++)
+            {
+                if (j != 15)
+                {
+                    line += value + "|";
+                }
+                else
+                {
+                    line += value;
+                }
+            }
+            outputStream.WriteLine(line);
         }
         outputStream.Flush();
         outputStream.Close();
@@ -39,7 +68,9 @@ public class World
         string path = Application.dataPath + "/../" + WorldManager.instance.fileName + "_" + (index - 1) + ".txt";
         if (File.Exists(path))
         {
-            return WorldManager.instance.canUnlockNextSeason(retrieveData(path));
+            float[] totalPerLayer = WorldManager.instance.computeTotalPerLayer(retrieveData(path));
+            int biggest = WorldManager.instance.findBiggestLayer(totalPerLayer);
+            return WorldManager.instance.canUnlockNextSeason(totalPerLayer, biggest);
         }
         return false;
     }

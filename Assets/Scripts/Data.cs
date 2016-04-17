@@ -23,9 +23,9 @@ public class Data
                 {
                     value = 0;
                 }
-                else if (value > 9)
+                else if (value > 4)
                 {
-                    value = 9;
+                    value = 4;
                 }
                 return value;
             }
