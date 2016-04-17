@@ -72,7 +72,7 @@ public class WorldManager : MonoBehaviour
         }
         layers[layerIndex] = Instantiate(layerPrefabs[layerIndex], pos, Quaternion.identity) as GameObject;
         layers[layerIndex].transform.parent = gameplayFolder;
-        layers[layerIndex].GetComponent<MeshRenderer>().material = layerMaterials[world.getIndex() + layerIndex];
+        layers[layerIndex].GetComponent<MeshRenderer>().material = layerMaterials[(world.getIndex() * 4) + layerIndex];
         resetLayerMesh(numberOfPanels, layerIndex);
     }
 
