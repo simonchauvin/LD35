@@ -7,8 +7,10 @@ public class WorldManager : MonoBehaviour
     private static WorldManager _instance;
 
     public string fileName;
+    public string exeFileName;
     public GameObject[] layerPrefabs;
     public Material[] layerMaterials;
+    public Color[] skiesColor;
 
     private Transform gameplayFolder;
     private Camera mainCam;
@@ -16,6 +18,8 @@ public class WorldManager : MonoBehaviour
     private GameObject[] layers;
     private float planeWidth;
     private float planeHeight;
+    private string exeFilePath;
+    private bool nextSeasonUnlocked;
 
 
     public static WorldManager instance
@@ -35,12 +39,15 @@ public class WorldManager : MonoBehaviour
         gameplayFolder = GameObject.Find("Gameplay").transform;
         mainCam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
         
-        world = new World(fileName);
+        world = new World();
+        mainCam.backgroundColor = skiesColor[world.getIndex()];
         Vector3 bottomLeft = mainCam.ScreenToWorldPoint(Vector3.zero);
         Vector3 topRight = mainCam.ScreenToWorldPoint(new Vector3(Screen.width, 300));
         planeWidth = (topRight.x - bottomLeft.x) / 16;
         planeHeight = (topRight.y - bottomLeft.y) / 4;
         mainCam.transform.position = new Vector3((topRight.x - bottomLeft.x) / 2, 0, -20f);
+        exeFilePath = Application.dataPath + "/../" + exeFileName + ".exe";
+        nextSeasonUnlocked = false;
 
         int planesNumber = 16;
         layers = new GameObject[4];
@@ -114,7 +121,79 @@ public class WorldManager : MonoBehaviour
     {
         if (File.Exists(world.getFilePath()))
         {
-            updateWorld(world.retrieveData());
+            Data[] data = world.retrieveData(world.getFilePath());
+            updateWorld(data);
+            
+            if (!isThisTheLastWorld() && canUnlockNextSeason(data))
+            {
+                if (File.Exists(exeFilePath) && !isThisWorldRunningAlready(world.getNextWorldIndex()) && !nextSeasonUnlocked)
+                {
+                    nextSeasonUnlocked = true;
+                    System.Diagnostics.Process.Start(exeFilePath);
+                }
+            }
+            else if (nextSeasonUnlocked)
+            {
+                if (world.getNextWorldIndex() > 0 && File.Exists(world.getNextWorldPath()))
+                {
+                    nextSeasonUnlocked = false;
+                    world.delete(world.getNextWorldIndex());
+                }
+            }
+            else if (isThisTheLastWorld())
+            {
+                // TODO end the game
+                // fade all to black ?
+            }
+        }
+        else
+        {
+            GameManager.instance.exit();
+        }
+    }
+
+    private bool isThisWorldRunningAlready (int index)
+    {
+        if (File.Exists(Application.dataPath + "/../" + fileName + "_" + index + ".txt"))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private bool isThisTheLastWorld ()
+    {
+        if (world.getNextWorldIndex() > 0)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    public bool canUnlockNextSeason(Data[] data)
+    {
+        // TODO design
+        float total = 0;
+        foreach (Data layerData in data)
+        {
+            for (int i = 0; i < layerData.length; i++)
+            {
+                total += layerData.getHeight(i);
+            }
+        }
+        if (total > 325)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
         }
     }
 
@@ -128,8 +207,8 @@ public class WorldManager : MonoBehaviour
             float yPos = (-1.2f - (planeHeight * 2)) + (planeHeight * index) + planeHeight;
             for (int i = 0; i < vertices.Length; i += 4)
             {
-                vertices[i + 2] = new Vector3(mesh.vertices[i + 2].x, yPos + formatHeight(data[index].getHeight(i + 2)), mesh.vertices[i + 2].z);
-                vertices[i + 3] = new Vector3(mesh.vertices[i + 3].x, yPos + formatHeight(data[index].getHeight(i + 3)), mesh.vertices[i + 3].z);
+                vertices[i + 2] = new Vector3(mesh.vertices[i + 2].x, yPos + formatHeight(data[index].getHeight(Mathf.FloorToInt(((i + 2) * 16) / 64))), mesh.vertices[i + 2].z);
+                vertices[i + 3] = new Vector3(mesh.vertices[i + 3].x, yPos + formatHeight(data[index].getHeight(Mathf.FloorToInt(((i + 3) * 16) / 64))), mesh.vertices[i + 3].z);
             }
             mesh.vertices = vertices;
             mesh.RecalculateNormals();
@@ -156,6 +235,12 @@ public class WorldManager : MonoBehaviour
     {
         if (world != null)
         {
+            int i = world.getIndex();
+            while (world.getNextWorldPath(i).Length > 0 && File.Exists(world.getNextWorldPath(i)))
+            {
+                File.Delete(world.getNextWorldPath(i));
+                i++;
+            }
             world.delete();
         }
     }

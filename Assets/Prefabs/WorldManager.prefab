@@ -39,7 +39,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8a468c68dab2a9498283e63790d9bf8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fileName: world
+  fileName: season
+  exeFileName: Seasons Processor
   layerPrefabs:
   - {fileID: 193260, guid: 2e86fe3eeb0c0b448b44dd5cc9dd6f71, type: 2}
   - {fileID: 193260, guid: 355ea3ec8bb6392479dd4d92ace4b863, type: 2}
@@ -62,7 +63,11 @@ MonoBehaviour:
   - {fileID: 2100000, guid: 8b6e2d7a4088ddd4f918f58b7c9eb951, type: 2}
   - {fileID: 2100000, guid: 91db280047207564ca69f320e643c1d0, type: 2}
   - {fileID: 2100000, guid: b359f6d6e85750946b4887c75e39045a, type: 2}
-  panelWidth: 0.1
+  skiesColor:
+  - {r: 0.4442582, g: 0.5415896, b: 0.6102941, a: 0}
+  - {r: 0.8455882, g: 0.9233266, b: 1, a: 0}
+  - {r: 0.30147058, g: 0.56643003, b: 1, a: 0}
+  - {r: 0, g: 0.751724, b: 1, a: 0}
 --- !u!1001 &100100000
 Prefab:
   m_ObjectHideFlags: 1

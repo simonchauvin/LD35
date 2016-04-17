@@ -5,28 +5,27 @@ using System.IO;
 public class World
 {
     private int index;
-    private string filePath;
-    private StreamWriter outputStream;
 
 
-    public World (string fileName)
+    public World ()
     {
         index = 0;
+        string path;
         do
         {
-            filePath = Application.dataPath + "/../" + fileName + "_" + index + ".txt";
+            path = Application.dataPath + "/../" + WorldManager.instance.fileName + "_" + index + ".txt";
             index++;
         }
-        while (File.Exists(filePath));
+        while (File.Exists(path));
         index--;
 
-        if (index > 3)
+        if (index != 0 && (index > 3 || !canBeOpened()))
         {
             GameManager.instance.exit();
         }
 
         // Create world file
-        outputStream = new StreamWriter(filePath, true);
+        StreamWriter outputStream = new StreamWriter(path, true);
         for (int i = 0; i < 4; i++)
         {
             outputStream.WriteLine("5|5|5|5|5|5|5|5|5|5|5|5|5|5|5|5");
@@ -35,7 +34,53 @@ public class World
         outputStream.Close();
     }
 
-    public Data[] retrieveData ()
+    private bool canBeOpened ()
+    {
+        string path = Application.dataPath + "/../" + WorldManager.instance.fileName + "_" + (index - 1) + ".txt";
+        if (File.Exists(path))
+        {
+            return WorldManager.instance.canUnlockNextSeason(retrieveData(path));
+        }
+        return false;
+    }
+
+    public int getNextWorldIndex ()
+    {
+        if (index + 1 < 4)
+        {
+            return index + 1;
+        }
+        return -1;
+    }
+
+    public string getNextWorldPath()
+    {
+        if (getNextWorldIndex() > 0)
+        {
+            return Application.dataPath + "/../" + WorldManager.instance.fileName + "_" + getNextWorldIndex() + ".txt";
+        }
+        return "";
+    }
+
+    public int getNextWorldIndex(int i)
+    {
+        if (i + 1 < 4)
+        {
+            return i + 1;
+        }
+        return -1;
+    }
+
+    public string getNextWorldPath(int i)
+    {
+        if (getNextWorldIndex(i) > 0)
+        {
+            return Application.dataPath + "/../" + WorldManager.instance.fileName + "_" + getNextWorldIndex(i) + ".txt";
+        }
+        return "";
+    }
+
+    public Data[] retrieveData (string filePath)
     {
         string[] lines = File.ReadAllLines(filePath);
         Data[] data = new Data[4];
@@ -48,12 +93,17 @@ public class World
 
     public void delete ()
     {
-        File.Delete(filePath);
+        File.Delete(Application.dataPath + "/../" + WorldManager.instance.fileName + "_" + index + ".txt");
+    }
+
+    public void delete(int worldIndex)
+    {
+        File.Delete(Application.dataPath + "/../" + WorldManager.instance.fileName + "_" + worldIndex + ".txt");
     }
 
     public string getFilePath ()
     {
-        return filePath;
+        return Application.dataPath + "/../" + WorldManager.instance.fileName + "_" + index + ".txt";
     }
 
     public int getIndex ()
