@@ -37,6 +37,12 @@ public class GameManager : MonoBehaviour
 
 	}
 
+    public void exit ()
+    {
+        WorldManager.instance.deleteWorld();
+        Application.Quit();
+    }
+
     public void OnApplicationQuit()
     {
         WorldManager.instance.deleteWorld();

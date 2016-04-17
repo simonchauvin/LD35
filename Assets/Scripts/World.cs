@@ -20,6 +20,12 @@ public class World
         while (File.Exists(filePath));
         index--;
 
+        if (index > 3)
+        {
+            Debug.Log(index);
+            GameManager.instance.exit();
+        }
+
         // Create world file
         writeLines(4);
     }

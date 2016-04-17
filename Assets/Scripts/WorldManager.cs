@@ -154,6 +154,9 @@ public class WorldManager : MonoBehaviour
 
     public void deleteWorld ()
     {
-        world.delete();
+        if (world != null)
+        {
+            world.delete();
+        }
     }
 }
