@@ -22,7 +22,6 @@ public class World
 
         if (index > 3)
         {
-            Debug.Log(index);
             GameManager.instance.exit();
         }
 

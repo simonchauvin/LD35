@@ -9,13 +9,13 @@ public class WorldManager : MonoBehaviour
     public string fileName;
     public GameObject[] layerPrefabs;
     public Material[] layerMaterials;
-    public float panelWidth;
 
     private Transform gameplayFolder;
     private Camera mainCam;
     private World world;
     private GameObject[] layers;
-    private float panelHeight;
+    private float planeWidth;
+    private float planeHeight;
 
 
     public static WorldManager instance
@@ -36,22 +36,21 @@ public class WorldManager : MonoBehaviour
         mainCam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
         
         world = new World(fileName);
-        layers = new GameObject[4];
         Vector3 bottomLeft = mainCam.ScreenToWorldPoint(Vector3.zero);
         Vector3 topRight = mainCam.ScreenToWorldPoint(new Vector3(Screen.width, 300));
-        float distHor = (topRight.x - bottomLeft.x);
-        panelHeight = (topRight.y - bottomLeft.y) / 4;
-        mainCam.transform.position = new Vector3(distHor / 2, 0, -20f);
+        planeWidth = (topRight.x - bottomLeft.x) / 16;
+        planeHeight = (topRight.y - bottomLeft.y) / 4;
+        mainCam.transform.position = new Vector3((topRight.x - bottomLeft.x) / 2, 0, -20f);
 
-        int numberOfPanels = Mathf.CeilToInt(distHor / panelWidth);
-
-        loadLayer(3, numberOfPanels);
-        loadLayer(2, numberOfPanels);
-        loadLayer(1, numberOfPanels);
-        loadLayer(0, numberOfPanels);
+        int planesNumber = 16;
+        layers = new GameObject[4];
+        loadLayer(3, planesNumber);
+        loadLayer(2, planesNumber);
+        loadLayer(1, planesNumber);
+        loadLayer(0, planesNumber);
     }
 
-    private void loadLayer (int layerIndex, int numberOfPanels)
+    private void loadLayer (int layerIndex, int planesNumber)
     {
         Vector3 pos = Vector3.zero;
         if (layerIndex == 0)
@@ -73,7 +72,7 @@ public class WorldManager : MonoBehaviour
         layers[layerIndex] = Instantiate(layerPrefabs[layerIndex], pos, Quaternion.identity) as GameObject;
         layers[layerIndex].transform.parent = gameplayFolder;
         layers[layerIndex].GetComponent<MeshRenderer>().material = layerMaterials[(world.getIndex() * 4) + layerIndex];
-        resetLayerMesh(numberOfPanels, layerIndex);
+        resetLayerMesh(planesNumber, layerIndex);
     }
 
     private void resetLayerMesh (int numberOfPanels, int layerIndex)
@@ -81,17 +80,17 @@ public class WorldManager : MonoBehaviour
         Mesh mesh = layers[layerIndex].GetComponent<MeshFilter>().mesh;
         mesh.Clear();
         Vector3[] vertices = new Vector3[numberOfPanels * 4];
-        int[] triangles = new int[numberOfPanels * 2 * 3];
+        int[] triangles = new int[numberOfPanels * 6];
         float xPos = 0;
-        float yPos = (-1f - (panelHeight * (4 / 2))) + (panelHeight * layerIndex);
+        float yPos = (-1f - (planeHeight * 2)) + (planeHeight * layerIndex);
         for (int i = 0; i < vertices.Length; i += 4)
         {
             vertices[i] = new Vector3(xPos, yPos, 0);
-            vertices[i + 1] = new Vector3(xPos + panelWidth, yPos, 0);
-            vertices[i + 2] = new Vector3(xPos + panelWidth, yPos + panelHeight, 0);
-            vertices[i + 3] = new Vector3(xPos, yPos + panelHeight, 0);
+            vertices[i + 1] = new Vector3(xPos + planeWidth, yPos, 0);
+            vertices[i + 2] = new Vector3(xPos + planeWidth, yPos + planeHeight, 0);
+            vertices[i + 3] = new Vector3(xPos, yPos + planeHeight, 0);
 
-            xPos += panelWidth;
+            xPos += planeWidth;
         }
 
         int tI = 0;
@@ -126,7 +125,7 @@ public class WorldManager : MonoBehaviour
         {
             Mesh mesh = layer.GetComponent<MeshFilter>().mesh;
             Vector3[] vertices = mesh.vertices;
-            float yPos = (-1f - (panelHeight * (4 / 2))) + (panelHeight * index) + panelHeight;
+            float yPos = (-1.2f - (planeHeight * 2)) + (planeHeight * index) + planeHeight;
             for (int i = 0; i < vertices.Length; i += 4)
             {
                 vertices[i + 2] = new Vector3(mesh.vertices[i + 2].x, yPos + formatHeight(data[index].getHeight(i + 2)), mesh.vertices[i + 2].z);
@@ -140,14 +139,15 @@ public class WorldManager : MonoBehaviour
 
     private float formatHeight(float height)
     {
-        height = ((height * 5) / 9) - 2.5f;
-        if (height > panelHeight * 0.8f)
+        float ratio = 1.0f;
+        height = ((height * 4) / 9) - planeHeight;
+        if (height > planeHeight * ratio)
         {
-            height = panelHeight * 0.8f;
+            height = planeHeight * ratio;
         }
-        else if (height < -panelHeight * 0.8f)
+        else if (height < -planeHeight * ratio)
         {
-            height = -panelHeight * 0.8f;
+            height = -planeHeight * ratio;
         }
         return height;
     }
