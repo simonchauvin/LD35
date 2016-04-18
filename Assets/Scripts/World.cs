@@ -28,7 +28,7 @@ public class World
         string p = Application.dataPath + "/inter_season.txt";
         int layer = -1;
         int total = -1;
-        if (File.Exists(p))
+        if (File.Exists(p) && index > 0)
         {
             StreamReader reader = new StreamReader(p);
             string line = reader.ReadLine();
@@ -44,7 +44,7 @@ public class World
             string line = "";
             if (i == layer)
             {
-                value = total / 32;
+                value = 1;
             }
             for (int j = 0; j < 16; j++)
             {
@@ -57,6 +57,7 @@ public class World
                     line += value;
                 }
             }
+            WorldManager.instance.setLastData(i, line);
             outputStream.WriteLine(line);
         }
         outputStream.Flush();

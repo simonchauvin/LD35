@@ -26,6 +26,7 @@ public class WorldManager : MonoBehaviour
     private float planeHeight;
     private string exeFilePath;
     private bool nextSeasonUnlocked;
+    private Data[] lastData;
 
 
     public static WorldManager instance
@@ -50,8 +51,13 @@ public class WorldManager : MonoBehaviour
         lightTimer = 0f;
         maxLightTimer = 5f + Random.value;
         lightRotPhase = false;
+        lastData = new Data[4];
 
         world = new World();
+        if (!File.Exists(world.getNextWorldPath()))
+        {
+            AudioManager.instance.playMusic(world.getIndex());
+        }
         mainCam.backgroundColor = skiesColor[world.getIndex()];
         Vector3 bottomLeft = mainCam.ScreenToWorldPoint(Vector3.zero);
         Vector3 topRight = mainCam.ScreenToWorldPoint(new Vector3(Screen.width, 300));
@@ -67,6 +73,11 @@ public class WorldManager : MonoBehaviour
         loadLayer(2, planesNumber);
         loadLayer(1, planesNumber);
         loadLayer(0, planesNumber);
+    }
+
+    public void setLastData (int index, string line)
+    {
+        lastData[index] = new Data(line.Split('|'));
     }
 
     private void loadLayer (int layerIndex, int planesNumber)
@@ -129,12 +140,33 @@ public class WorldManager : MonoBehaviour
         mesh.RecalculateNormals();
     }
 	
+    private int getModifiedLayer(Data[] data, Data[] last)
+    {
+        for (int i = 0; i < data.Length; i++)
+        {
+            for (int j = 0; j < data[i].length; j++)
+            {
+                if (data[i].getHeight(j) != last[i].getHeight(j))
+                {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
 	void Update ()
     {
         if (File.Exists(world.getFilePath()))
         {
             Data[] data = world.retrieveData(world.getFilePath());
+            int layerToPlayIndex = getModifiedLayer(data, lastData);
+            if (layerToPlayIndex >= 0)
+            {
+                AudioManager.instance.playLayer(layerToPlayIndex);
+            }
             updateWorld(data);
+            data.CopyTo(lastData, 0);
 
             float[] totalPerLayer = computeTotalPerLayer(data);
             int biggest = findBiggestLayer(totalPerLayer);
@@ -174,6 +206,15 @@ public class WorldManager : MonoBehaviour
             {
                 lightTimer = 0;
                 lightRotPhase = !lightRotPhase;
+            }
+            
+            if (File.Exists(world.getNextWorldPath()))
+            {
+                AudioManager.instance.stopMusic();
+            }
+            else
+            {
+                AudioManager.instance.playMusic(world.getIndex());
             }
         }
         else
