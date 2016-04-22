@@ -284,18 +284,31 @@ public class WorldManager : MonoBehaviour
 
     public bool canUnlockNextSeason(float[] totalPerLayer, int biggest)
     {
-        for (int i = 1; i < totalPerLayer.Length; i++)
+        float[] total = new float[totalPerLayer.Length];
+        bool ok = false;
+        for (int i = 0; i < totalPerLayer.Length; i++)
         {
-            totalPerLayer[i] += 16;
+            total[i] = totalPerLayer[i] + 16;
+        }
+        for (int i = 0; i < total.Length; i++)
+        {
             if (i != biggest)
             {
-                if (totalPerLayer[biggest] < totalPerLayer[i] * 2f)
+                if (total[biggest] < total[i] * 2f)
                 {
                     return false;
                 }
+                ok = true;
             }
         }
-        return true;
+        if (ok)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     private void updateWorld (Data[] data)

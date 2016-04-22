@@ -53,7 +53,7 @@ public class AudioManager : MonoBehaviour
         if (!musicSource.isPlaying || musicSource.volume <= 0)
         {
             //musicSource.clip = seasons[seasonIndex];
-            musicSource.volume = 0.5f;
+            musicSource.volume = 0.1f;
             musicSource.Play();
         }
     }
