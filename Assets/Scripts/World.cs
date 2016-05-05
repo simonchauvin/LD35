@@ -6,7 +6,6 @@ public class World
 {
     private int index;
 
-
     public World ()
     {
         index = 0;
@@ -123,13 +122,16 @@ public class World
         return data;
     }
 
-    public void delete ()
+    public void delete (string exeFileName)
     {
-        File.Delete(Application.dataPath + "/../" + WorldManager.instance.fileName + "_" + index + ".txt");
+        delete(index, exeFileName);
     }
 
-    public void delete(int worldIndex)
+    public void delete(int worldIndex, string exeFileName)
     {
+        System.Diagnostics.Process p = System.Diagnostics.Process.GetProcessesByName(exeFileName)[worldIndex];
+        p.CloseMainWindow();
+        p.Close();
         File.Delete(Application.dataPath + "/../" + WorldManager.instance.fileName + "_" + worldIndex + ".txt");
     }
 

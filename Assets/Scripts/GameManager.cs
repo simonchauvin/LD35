@@ -39,12 +39,12 @@ public class GameManager : MonoBehaviour
 
     public void exit ()
     {
-        WorldManager.instance.deleteWorld();
+        WorldManager.instance.closeSeasons();
         Application.Quit();
     }
 
     public void OnApplicationQuit()
     {
-        WorldManager.instance.deleteWorld();
+        WorldManager.instance.closeSeasons();
     }
 }

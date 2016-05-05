@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
+using System.Diagnostics;
 
 public class WorldManager : MonoBehaviour
 {
@@ -20,7 +21,7 @@ public class WorldManager : MonoBehaviour
     private float lightTimer;
     private float maxLightTimer;
     private bool lightRotPhase;
-    private World world;
+    private World currentSeason;
     private GameObject[] layers;
     private float planeWidth;
     private float planeHeight;
@@ -53,12 +54,12 @@ public class WorldManager : MonoBehaviour
         lightRotPhase = false;
         lastData = new Data[4];
 
-        world = new World();
-        if (!File.Exists(world.getNextWorldPath()))
+        currentSeason = new World();
+        if (!File.Exists(currentSeason.getNextWorldPath()))
         {
-            AudioManager.instance.playMusic(world.getIndex());
+            AudioManager.instance.playMusic(currentSeason.getIndex());
         }
-        mainCam.backgroundColor = skiesColor[world.getIndex()];
+        mainCam.backgroundColor = skiesColor[currentSeason.getIndex()];
         Vector3 bottomLeft = mainCam.ScreenToWorldPoint(Vector3.zero);
         Vector3 topRight = mainCam.ScreenToWorldPoint(new Vector3(Screen.width, 300));
         planeWidth = (topRight.x - bottomLeft.x) / 16;
@@ -101,7 +102,7 @@ public class WorldManager : MonoBehaviour
         }
         layers[layerIndex] = Instantiate(layerPrefabs[layerIndex], pos, Quaternion.identity) as GameObject;
         layers[layerIndex].transform.parent = gameplayFolder;
-        layers[layerIndex].GetComponent<MeshRenderer>().material = layerMaterials[(world.getIndex() * 4) + layerIndex];
+        layers[layerIndex].GetComponent<MeshRenderer>().material = layerMaterials[(currentSeason.getIndex() * 4) + layerIndex];
         resetLayerMesh(planesNumber, layerIndex);
     }
 
@@ -157,9 +158,9 @@ public class WorldManager : MonoBehaviour
 
 	void Update ()
     {
-        if (File.Exists(world.getFilePath()))
+        if (File.Exists(currentSeason.getFilePath()))
         {
-            Data[] data = world.retrieveData(world.getFilePath());
+            Data[] data = currentSeason.retrieveData(currentSeason.getFilePath());
             int layerToPlayIndex = getModifiedLayer(data, lastData);
             if (layerToPlayIndex >= 0)
             {
@@ -172,7 +173,7 @@ public class WorldManager : MonoBehaviour
             int biggest = findBiggestLayer(totalPerLayer);
             if (!isThisTheLastWorld() && canUnlockNextSeason(totalPerLayer, biggest))
             {
-                if (File.Exists(exeFilePath) && !isThisWorldRunningAlready(world.getNextWorldIndex()) && !nextSeasonUnlocked)
+                if (File.Exists(exeFilePath) && !isThisWorldRunningAlready(currentSeason.getNextWorldIndex()) && !nextSeasonUnlocked)
                 {
                     nextSeasonUnlocked = true;
                     writeInterSeasonFile(totalPerLayer, biggest);
@@ -181,10 +182,10 @@ public class WorldManager : MonoBehaviour
             }
             else if (nextSeasonUnlocked)
             {
-                if (world.getNextWorldIndex() > 0 && File.Exists(world.getNextWorldPath()))
+                if (currentSeason.getNextWorldIndex() > 0 && File.Exists(currentSeason.getNextWorldPath()))
                 {
                     nextSeasonUnlocked = false;
-                    world.delete(world.getNextWorldIndex());
+                    currentSeason.delete(currentSeason.getNextWorldIndex(), exeFileName);
                 }
             }
             else if (isThisTheLastWorld())
@@ -208,13 +209,13 @@ public class WorldManager : MonoBehaviour
                 lightRotPhase = !lightRotPhase;
             }
             
-            if (File.Exists(world.getNextWorldPath()))
+            if (File.Exists(currentSeason.getNextWorldPath()))
             {
                 AudioManager.instance.stopMusic();
             }
             else
             {
-                AudioManager.instance.playMusic(world.getIndex());
+                AudioManager.instance.playMusic(currentSeason.getIndex());
             }
         }
         else
@@ -246,7 +247,7 @@ public class WorldManager : MonoBehaviour
 
     private bool isThisTheLastWorld ()
     {
-        if (world.getNextWorldIndex() > 0)
+        if (currentSeason.getNextWorldIndex() > 0)
         {
             return false;
         }
@@ -335,17 +336,54 @@ public class WorldManager : MonoBehaviour
         return height / 2;
     }
 
-    public void deleteWorld ()
+    public void closeSeasons ()
     {
-        if (world != null)
+        if (currentSeason != null)
         {
-            int i = world.getIndex();
-            while (world.getNextWorldPath(i).Length > 0 && File.Exists(world.getNextWorldPath(i)))
+            int index = currentSeason.getIndex();
+            Season[] seasons = getAllSeasons();
+            if (seasons.Length > 0)
             {
-                File.Delete(world.getNextWorldPath(i));
+                for (int i = seasons.Length - 1; i >= index; i--)
+                {
+                    seasons[i].close();
+                }
+            }
+
+            /*while (world.getNextWorldPath(i).Length > 0 && File.Exists(world.getNextWorldPath(i)))
+            {
+                getSeasonByIndex(i).close();
+                //File.Delete(world.getNextWorldPath(i));
                 i++;
             }
-            world.delete();
+            world.delete(exeFileName);*/
         }
+    }
+
+    private bool exists (int index)
+    {
+        return Process.GetProcessesByName(exeFileName).Length > index;
+    }
+
+    private Season[] getAllSeasons ()
+    {
+        Process[] processes = Process.GetProcessesByName(exeFileName);
+        Season[] seasons = new Season[processes.Length];
+        int index = 0;
+        foreach (Process process in processes)
+        {
+            seasons[index] = new Season(index);
+            index++;
+        }
+        return seasons;
+    }
+
+    private Season getSeasonByIndex (int index)
+    {
+        if (exists(index))
+        {
+            return new Season(index);
+        }
+        return null;
     }
 }
